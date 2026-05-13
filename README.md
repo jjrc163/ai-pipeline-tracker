@@ -28,47 +28,17 @@ The result is a fully automated, zero-maintenance hiring pipeline — built enti
 
 ## Module Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  MODULE 1 — Gmail Trigger (Watch New Emails)                         │
-│  Query: subject:(application OR applying OR interview)               │
-│         text:(application OR applying OR interview)                  │
-│  Format: Full content · Limit: 10 · markSeen: false                  │
-│  Captures: subject, snippet, fromName, fromEmail, internalDate       │
-└──────────────────────────────┬───────────────────────────────────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  MODULE 2 — Gemini AI (gemini-3.1-flash-lite)                        │
-│  Input: {{subject}} + {{snippet}}                                    │
-│  System prompt: strict JSON-only extractor                           │
-│  Output: { "cargo": "...", "empresa": "...", "status": "..." }       │
-│  Allowed statuses: Applied | Interview | Rejected                    │
-└──────────────────────────────┬───────────────────────────────────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  MODULE 3 — JSON Parse (Estructura_Vacantes_IA)                      │
-│  Input: {{gemini.result}}                                            │
-│  Schema: cargo (text), empresa (text), status (text)                 │
-│  Enforces typed field access for all downstream modules              │
-└──────────────────────────────┬───────────────────────────────────────┘
-                               │
-                      ┌────────┴────────┐
-                      │                 │
-                      ▼                 ▼
-┌─────────────────────────┐   ┌──────────────────────────────────────┐
-│  MODULE 4               │   │  MODULE 5 — Filter: "Solo            │
-│  Notion: Create Page    │   │  Entrevistas"                        │
-│                         │   │  Condition: status == "Interview"    │
-│  Fields written:        │   │                                      │
-│  • Nombre  → cargo      │   │  → Telegram: Send Message            │
-│  • Empresa → empresa    │   │  "🚀 ¡Novedades en tu búsqueda!      │
-│  • Status  → status     │   │   💼 Cargo: {cargo}                  │
-│  • Fecha   → date       │   │   🏢 Empresa: {empresa}              │
-│                         │   │   📍 Estado: {status}"               │
-└─────────────────────────┘   └──────────────────────────────────────┘
-```
+| Step | Module | Details |
+|:---:|---|---|
+| **1** | 📨 **Gmail** — Watch New Emails | Query: `subject:(application OR applying OR interview)` + full body scan · Format: Full · Limit: 10 · Captures: subject, snippet, fromName, fromEmail, internalDate |
+| ↓ | | |
+| **2** | 🤖 **Gemini AI** — gemini-3.1-flash-lite | Input: `{{subject}}` + `{{snippet}}` · System prompt enforces JSON-only output · Returns: `{ "cargo": "...", "empresa": "...", "status": "..." }` · Allowed statuses: `Applied` / `Interview` / `Rejected` |
+| ↓ | | |
+| **3** | 🧩 **JSON Parse** — Estructura_Vacantes_IA | Deserializes Gemini's raw text into typed fields: `cargo` (text), `empresa` (text), `status` (text) · Enforces schema before any downstream write |
+| ↓ | | |
+| **4** | 🗂️ **Notion** — Create Page | Writes: Nombre → `cargo` · Empresa → `empresa` · Status → `status` · Fecha → `internalDate` |
+| ↓ *(if status == Interview)* | | |
+| **5** | 🔔 **Telegram** — Send Message | Filter `"Solo Entrevistas"` passes only when `status == "Interview"` · Sends: 🚀 cargo · 🏢 empresa · 📍 status |
 
 **Step-by-step breakdown:**
 
@@ -91,26 +61,26 @@ The result is a fully automated, zero-maintenance hiring pipeline — built enti
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="screenshots/ss1.png" alt="Make.com scenario canvas showing the 5-module pipeline" width="100%"/>
+      <img src="screenshots/ss1.png" alt="Make.com scenario canvas showing the full 5-module pipeline" width="100%"/>
       <br/>
-      <sub><b>① Make.com Scenario Canvas</b><br/>Full 5-module pipeline — Gmail → Gemini → JSON → Notion → Telegram</sub>
+      <sub><b>① Make.com Scenario Canvas</b><br/>Complete pipeline view — Gmail → Gemini → JSON → Notion → Telegram</sub>
     </td>
     <td align="center" width="50%">
-      <img src="screenshots/ss2.png" alt="Gemini AI module configuration and JSON output" width="100%"/>
+      <img src="screenshots/ss2.png" alt="Gemini module configuration showing the extraction prompt" width="100%"/>
       <br/>
-      <sub><b>② Gemini AI Extraction</b><br/>Strict JSON-only system prompt and structured output</sub>
+      <sub><b>② Gemini Prompt & JSON Extraction</b><br/>System prompt enforcing strict JSON output with cargo, empresa and status fields</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="screenshots/ss3.png" alt="Notion database with logged job application records" width="100%"/>
+      <img src="screenshots/ss3.png" alt="Notion module mapping JSON fields to database columns" width="100%"/>
       <br/>
-      <sub><b>③ Notion Database Output</b><br/>Auto-populated records with status kanban grouping</sub>
+      <sub><b>③ Notion Module Field Mapping</b><br/>Each JSON field wired to its corresponding Notion database column</sub>
     </td>
     <td align="center" width="50%">
-      <img src="screenshots/ss4.png" alt="Telegram bot notification for interview invitation" width="100%"/>
+      <img src="screenshots/ss4.png" alt="Notion database populated with job application records" width="100%"/>
       <br/>
-      <sub><b>④ Telegram Alert</b><br/>Real-time interview notification fired by the conditional filter</sub>
+      <sub><b>④ Notion Database — Live Output</b><br/>Auto-populated records with status, company and position extracted by the AI</sub>
     </td>
   </tr>
 </table>
@@ -119,16 +89,17 @@ The result is a fully automated, zero-maintenance hiring pipeline — built enti
 
 ## Operation Budget
 
-| Module | Ops |
-|---|---|
-| Gmail: Watch New Emails | 1 |
-| Gemini: Create Completion | 1 |
-| JSON: Parse | 1 |
-| Notion: Create Page | 1 |
-| Telegram: Send Message (conditional) | 1 |
-| **Total per execution** | **~5 core ops** |
+| Module | Credits | Notes |
+|---|:---:|---|
+| Gmail: Watch New Emails | 1 | Fixed cost per run |
+| Gemini: Create Completion | 6 | AI inference — highest single cost |
+| JSON: Parse | 4 | Per field deserialization |
+| Notion: Create Page | 2 | One record write |
+| Telegram: Send Message | 5 | Conditional — only on Interview emails |
+| **Standard email (Applied / Rejected)** | **13** | Telegram step skipped |
+| **Interview email** | **18** | All 5 modules fire |
 
-> The **18 operations** figure reflects a full daily batch with approximately 3–4 matched emails per run. Make.com's free plan includes **1,000 ops/month**, which comfortably supports daily execution with headroom for manual test runs and error retries.
+> Make.com's free plan includes **1,000 ops/month**. At 13–18 credits per matched email, the pipeline comfortably handles dozens of applications per month with headroom for manual test runs. Since the Telegram module is gated behind the `"Solo Entrevistas"` filter, most executions stay at the lower 13-credit cost.
 
 ---
 
