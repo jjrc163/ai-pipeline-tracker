@@ -9,15 +9,15 @@
                 "__IMTCONN__": 8790488,
                 "filterType": "gmailSearch",
                 "format": "full",
-                "q": "subject:(application OR applying OR interview)\ntext content:(application OR applying OR interview)",
+                "q": "subject:(application OR applying OR interview)",
                 "markSeen": false,
-                "limit": 10
+                "limit": 30
             },
             "mapper": {},
             "metadata": {
                 "designer": {
-                    "x": 24,
-                    "y": -131
+                    "x": 195,
+                    "y": -98
                 },
                 "restore": {
                     "parameters": {
@@ -913,8 +913,8 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 619,
-                    "y": -164
+                    "x": 586,
+                    "y": -116
                 },
                 "restore": {
                     "parameters": {
@@ -991,8 +991,8 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 885,
-                    "y": 77
+                    "x": 733,
+                    "y": 96
                 },
                 "restore": {
                     "expect": {
@@ -2045,29 +2045,20 @@
                 ]
             },
             "mapper": {
-                "chatId": "1581927347",
                 "text": "🚀 ¡Novedades en tu búsqueda!\n💼 Cargo: {{4.cargo}}\n🏢 Empresa: {{4.empresa}}\n📍 Estado: {{4.status}}",
-                "messageThreadId": "",
+                "chatId": "1581927347",
                 "parseMode": "",
+                "replyMarkup": "",
+                "messageThreadId": "",
                 "replyToMessageId": "",
-                "replyMarkupAssembleType": "reply_markup_enter",
-                "replyMarkup": ""
+                "replyMarkupAssembleType": "reply_markup_enter"
             },
             "metadata": {
                 "designer": {
-                    "x": 1086,
-                    "y": -166
+                    "x": 919,
+                    "y": -114
                 },
                 "restore": {
-                    "parameters": {
-                        "__IMTCONN__": {
-                            "label": "My Telegram Bot connection",
-                            "data": {
-                                "scoped": "true",
-                                "connection": "telegram"
-                            }
-                        }
-                    },
                     "expect": {
                         "parseMode": {
                             "label": "Empty"
@@ -2077,6 +2068,15 @@
                         },
                         "replyMarkupAssembleType": {
                             "label": "Enter the Reply Markup"
+                        }
+                    },
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "data": {
+                                "scoped": "true",
+                                "connection": "telegram"
+                            },
+                            "label": "My Telegram Bot connection"
                         }
                     }
                 },
