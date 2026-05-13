@@ -84,6 +84,39 @@ The result is a fully automated, zero-maintenance hiring pipeline — built enti
 
 ---
 
+## Screenshots
+
+> Live evidence of the pipeline running end-to-end in production.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="screenshots/ss1.png" alt="Make.com scenario canvas showing the 5-module pipeline" width="100%"/>
+      <br/>
+      <sub><b>① Make.com Scenario Canvas</b><br/>Full 5-module pipeline — Gmail → Gemini → JSON → Notion → Telegram</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="screenshots/ss2.png" alt="Gemini AI module configuration and JSON output" width="100%"/>
+      <br/>
+      <sub><b>② Gemini AI Extraction</b><br/>Strict JSON-only system prompt and structured output</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="screenshots/ss3.png" alt="Notion database with logged job application records" width="100%"/>
+      <br/>
+      <sub><b>③ Notion Database Output</b><br/>Auto-populated records with status kanban grouping</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="screenshots/ss4.png" alt="Telegram bot notification for interview invitation" width="100%"/>
+      <br/>
+      <sub><b>④ Telegram Alert</b><br/>Real-time interview notification fired by the conditional filter</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## Operation Budget
 
 | Module | Ops |
