@@ -6,33 +6,33 @@
             "module": "google-email:triggerWatchNewEmails",
             "version": 4,
             "parameters": {
-                "__IMTCONN__": 8790488,
-                "filterType": "gmailSearch",
-                "format": "full",
                 "q": "subject:(application OR applying OR interview)",
+                "limit": 30,
+                "format": "full",
                 "markSeen": false,
-                "limit": 30
+                "filterType": "gmailSearch",
+                "__IMTCONN__": 8790488
             },
             "mapper": {},
             "metadata": {
                 "designer": {
-                    "x": 195,
-                    "y": -98
+                    "x": 211,
+                    "y": -149
                 },
                 "restore": {
                     "parameters": {
-                        "__IMTCONN__": {
-                            "label": "My Gmail connection (jjrc163@gmail.com)",
-                            "data": {
-                                "scoped": "true",
-                                "connection": "google-email"
-                            }
+                        "format": {
+                            "label": "Full content"
                         },
                         "filterType": {
                             "label": "Gmail filter"
                         },
-                        "format": {
-                            "label": "Full content"
+                        "__IMTCONN__": {
+                            "data": {
+                                "scoped": "true",
+                                "connection": "google-email"
+                            },
+                            "label": "My Gmail connection (jjrc163@gmail.com)"
                         }
                     }
                 },
@@ -83,10 +83,10 @@
                         "name": "limit",
                         "type": "uinteger",
                         "label": "Limit",
+                        "required": true,
                         "validate": {
                             "max": 500
-                        },
-                        "required": true
+                        }
                     }
                 ],
                 "interface": [
@@ -899,7 +899,61 @@
                         "label": "Inference Service Tier"
                     }
                 ]
-            }
+            },
+            "onerror": [
+                {
+                    "id": 7,
+                    "module": "builtin:Break",
+                    "version": 1,
+                    "parameters": {},
+                    "mapper": {
+                        "retry": true,
+                        "count": "3",
+                        "interval": "5"
+                    },
+                    "metadata": {
+                        "designer": {
+                            "x": 140,
+                            "y": 130
+                        },
+                        "restore": {
+                            "expect": {
+                                "retry": {
+                                    "mode": "chose"
+                                }
+                            }
+                        },
+                        "expect": [
+                            {
+                                "name": "retry",
+                                "type": "boolean",
+                                "label": "Automatically complete execution",
+                                "required": true
+                            },
+                            {
+                                "name": "count",
+                                "type": "uinteger",
+                                "label": "Number of attempts",
+                                "validate": {
+                                    "min": 1,
+                                    "max": 10000
+                                },
+                                "required": true
+                            },
+                            {
+                                "name": "interval",
+                                "type": "uinteger",
+                                "label": "Interval between attempts",
+                                "validate": {
+                                    "min": 1,
+                                    "max": 44640
+                                },
+                                "required": true
+                            }
+                        ]
+                    }
+                }
+            ]
         },
         {
             "id": 4,
@@ -913,8 +967,8 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 586,
-                    "y": -116
+                    "x": 590,
+                    "y": -155
                 },
                 "restore": {
                     "parameters": {
@@ -991,8 +1045,8 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 733,
-                    "y": 96
+                    "x": 749,
+                    "y": 117
                 },
                 "restore": {
                     "expect": {
@@ -2164,7 +2218,7 @@
             "slots": null,
             "confidential": false,
             "dataloss": false,
-            "dlq": false,
+            "dlq": true,
             "freshVariables": false
         },
         "designer": {
