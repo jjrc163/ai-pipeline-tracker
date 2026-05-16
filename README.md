@@ -6,9 +6,9 @@
 
 ## Pitch
 
-Most job seekers track applications in spreadsheets they forget to update, or miss interview invitations buried in their inbox. This Make.com scenario solves both problems simultaneously: it watches your Gmail for job-related emails, delegates understanding to a Gemini AI model, persists clean structured records into a Notion database, and fires an instant Telegram notification the moment an interview is detected.
+Most job seekers track applications in spreadsheets they forget to update, or miss interview invitations buried in their inbox. This Make.com scenario solves both problems simultaneously: it watches your Gmail for job-related emails, delegates understanding to a Gemini AI model, enforces schema consistency through prompt engineering, verifies idempotency against Notion before any write, and fires an instant Telegram notification the moment an interview is detected.
 
-The result is a fully automated, zero-maintenance hiring pipeline — built entirely on no-code APIs, consuming only **18 operations per execution** on Make.com's free tier.
+The result is a fully automated, zero-maintenance hiring pipeline with built-in state management and deduplication — built entirely on no-code APIs, consuming as few as **13 operations per execution** on Make.com's free tier.
 
 ---
 
@@ -18,8 +18,10 @@ The result is a fully automated, zero-maintenance hiring pipeline — built enti
 |---|---|
 | 📨 **Event-Driven Gmail Trigger** | Watches for new emails matching `subject:(application OR applying OR interview)` plus full-text body scan — fires automatically on each new match, no polling required |
 | 🤖 **Gemini AI Extraction** | Sends email subject + snippet to **Gemini 3.1 Flash Lite** with a strict system prompt that forces pure JSON output — extracts `cargo` (position), `empresa` (company), and `status` with no hallucinated fields |
-| 🔒 **Constrained Status Classification** | The AI is constrained by prompt engineering to output exactly one of three valid states: `Applied`, `Interview`, or `Rejected` — no ambiguous or invented statuses can enter the pipeline |
+| 🔒 **Strict Schema Enforcement via Prompt Engineering** | The LLM prompt is architecturally structured to enforce a fixed categorical schema — status output is constrained to exactly four values: `Applied`, `Interview`, `Technical Test`, or `Rejected`. Freeform or invented classifications are explicitly prohibited at the prompt level, guaranteeing absolute data consistency for all downstream queries and filters |
 | 🧩 **Typed JSON Parsing** | Gemini's raw text response is parsed against a named Make.com data structure (`Estructura_Vacantes_IA`) with three typed fields, enforcing schema integrity before any downstream write |
+| 🔍 **Idempotency via Pre-Write Deduplication** | Before any write operation, the pipeline executes a Notion `Search Objects` query using a composite key of `Company AND Job Position`. This pre-flight check ensures that no redundant records are created for emails already present in the database, making each execution safe to rerun without side effects |
+| 🚦 **State-Driven Gatekeeper Filter** | A conditional filter on the Make.com connection line acts as the pipeline's core decision engine: if the search returns **0 matches**, the record is logged as a new application; if matches exist, the filter compares the LLM-extracted `status` against the stored value — allowing the flow only when a state transition is detected (e.g., `Applied` → `Interview`), and blocking it when the status is unchanged to prevent duplicate entries |
 | 🗂️ **Notion Database Logging** | Creates a new page in a structured Notion database with fields: **Nombre** (position title), **Empresa**, **Status** (kanban-grouped select), and **Fecha** (date received) |
 | 🔔 **Conditional Telegram Alert** | A route filter (`Solo Entrevistas`) checks if `status == "Interview"` — only then fires a Telegram bot message with position, company, and status, delivering real-time alerts exclusively for high-priority events |
 | ⚙️ **Error-Resilient Scenario Config** | `autoCommit: true`, `maxErrors: 3`, and `autoCommitTriggerLast: true` ensure partial failures don't roll back committed records and the trigger cursor advances correctly |
@@ -32,25 +34,33 @@ The result is a fully automated, zero-maintenance hiring pipeline — built enti
 |:---:|---|---|
 | **1** | 📨 **Gmail** — Watch New Emails | Query: `subject:(application OR applying OR interview)` + full body scan · Format: Full · Limit: 10 · Captures: subject, snippet, fromName, fromEmail, internalDate |
 | ↓ | | |
-| **2** | 🤖 **Gemini AI** — gemini-3.1-flash-lite | Input: `{{subject}}` + `{{snippet}}` · System prompt enforces JSON-only output · Returns: `{ "cargo": "...", "empresa": "...", "status": "..." }` · Allowed statuses: `Applied` / `Interview` / `Rejected` |
+| **2** | 🤖 **Gemini AI** — gemini-3.1-flash-lite | Input: `{{subject}}` + `{{snippet}}` · System prompt enforces JSON-only output · Returns: `{ "cargo": "...", "empresa": "...", "status": "..." }` · Allowed statuses: `Applied` / `Interview` / `Technical Test` / `Rejected` |
 | ↓ | | |
 | **3** | 🧩 **JSON Parse** — Estructura_Vacantes_IA | Deserializes Gemini's raw text into typed fields: `cargo` (text), `empresa` (text), `status` (text) · Enforces schema before any downstream write |
 | ↓ | | |
-| **4** | 🗂️ **Notion** — Create Page | Writes: Nombre → `cargo` · Empresa → `empresa` · Status → `status` · Fecha → `internalDate` |
+| **4** | 🔍 **Notion** — Search Objects | Composite key lookup: `Nombre == cargo AND Empresa == empresa` · Returns existing record count · Acts as the idempotency checkpoint — all write decisions depend on this result |
+| ↓ | | |
+| **5** | 🚦 **Gatekeeper Filter** — State Evaluation | **0 matches** → new application, proceed to write · **>0 matches + status changed** → state transition detected, proceed to log progress · **>0 matches + status identical** → duplicate, flow blocked |
+| ↓ *(passes filter)* | | |
+| **6** | 🗂️ **Notion** — Create Page | Writes: Nombre → `cargo` · Empresa → `empresa` · Status → `status` · Fecha → `internalDate` |
 | ↓ *(if status == Interview)* | | |
-| **5** | 🔔 **Telegram** — Send Message | Filter `"Solo Entrevistas"` passes only when `status == "Interview"` · Sends: 🚀 cargo · 🏢 empresa · 📍 status |
+| **7** | 🔔 **Telegram** — Send Message | Filter `"Solo Entrevistas"` passes only when `status == "Interview"` · Sends: 🚀 cargo · 🏢 empresa · 📍 status |
 
 **Step-by-step breakdown:**
 
 1. **Gmail Trigger** — An instant trigger watches for new incoming emails matching job-related keywords in both subject and body. Fetches full content including subject, snippet, sender metadata, and internal date.
 
-2. **Gemini AI Call** — The email subject and Gmail snippet are sent to Gemini 3.1 Flash Lite via Make.com's native connector. A carefully engineered system prompt instructs the model to act as a strict data extractor and return *only* a JSON object — no preamble, no explanation, no markdown fences. The model is explicitly forbidden from inventing status values beyond the three allowed options.
+2. **Gemini AI Call** — The email subject and Gmail snippet are sent to Gemini 3.1 Flash Lite via Make.com's native connector. A carefully engineered system prompt instructs the model to act as a strict data extractor and return *only* a JSON object — no preamble, no explanation, no markdown fences. The prompt enforces a fixed four-value categorical schema (`Applied`, `Interview`, `Technical Test`, `Rejected`) through explicit structural constraints, making the LLM's output a reliable, typed data source rather than a free-form text generator.
 
-3. **JSON Parse** — Gemini's text output is deserialized against a typed Make.com data structure (`Estructura_Vacantes_IA`). This step decouples raw AI output from downstream modules, ensuring `cargo`, `empresa`, and `status` are accessible as proper typed variables.
+3. **JSON Parse** — Gemini's text output is deserialized against a typed Make.com data structure (`Estructura_Vacantes_IA`). This step decouples raw AI output from downstream modules, ensuring `cargo`, `empresa`, and `status` are accessible as proper typed variables before any database interaction occurs.
 
-4. **Notion Page Creation** — A new record is written to the job applications Notion database. The `Status` field maps directly to Notion's kanban-grouped select: `Applied` → To-do, `Interview` → In progress, `Rejected` → Complete.
+4. **Idempotency Check (Notion Search Objects)** — Before writing anything, the pipeline queries Notion using a composite key of `Company AND Job Position`. This pre-flight lookup is the system's primary consistency mechanism: it determines whether the current email represents a new application or a potential state transition on an existing record.
 
-5. **Conditional Telegram Alert** — A route filter evaluates `status == "Interview"`. If true, a Telegram bot message is dispatched immediately with position, company name, and status. Non-interview emails complete silently with no notification.
+5. **Gatekeeper Filter (State Evaluation)** — A conditional filter on the Make.com connection line evaluates the result of the lookup. Zero matches route the flow toward a fresh record creation. A non-zero result triggers a second condition: if the LLM-extracted `status` differs from the stored value, the state transition is valid and the flow proceeds — logging the progression as a new historical entry (e.g., `Applied` → `Interview`). If the status is identical to what is already stored, the filter blocks the flow entirely, preventing duplicate records from polluting the database.
+
+6. **Notion Page Creation** — A new record is written to the job applications Notion database only after passing the gatekeeper. The `Status` field maps directly to Notion's kanban-grouped select: `Applied` → To-do, `Interview` → In progress, `Technical Test` → In progress, `Rejected` → Complete.
+
+7. **Conditional Telegram Alert** — A route filter evaluates `status == "Interview"`. If true, a Telegram bot message is dispatched immediately with position, company name, and status. All other statuses complete silently with no notification.
 
 ---
 
@@ -109,10 +119,10 @@ The result is a fully automated, zero-maintenance hiring pipeline — built enti
 |---|---|---|
 | `Nombre` | Title | Position title extracted by Gemini |
 | `Empresa` | Rich Text | Company name extracted by Gemini |
-| `Status` | Status (Select) | `Applied` · `Interview` · `Rejected` |
+| `Status` | Status (Select) | `Applied` · `Interview` · `Technical Test` · `Rejected` |
 | `Fecha` | Date | Email's internal Gmail timestamp |
 
-The `Status` field uses Notion's native kanban grouping: Applied → *To-do*, Interview → *In progress*, Rejected → *Complete*.
+The `Status` field uses Notion's native kanban grouping: Applied → *To-do*, Interview & Technical Test → *In progress*, Rejected → *Complete*.
 
 ---
 
@@ -146,11 +156,23 @@ The `Status` field uses Notion's native kanban grouping: Applied → *To-do*, In
 
 ## Why This Matters
 
-### AI-in-the-Loop, Not AI-as-a-Crutch
+### Strict Schema Enforcement via Prompt Engineering
 
 Using Gemini for entity extraction instead of regex patterns or keyword filters is a deliberate architectural choice. Job email formats vary wildly across companies, ATS platforms, and languages. A rule-based parser would require constant maintenance. A constrained LLM prompt handles format variation naturally while remaining deterministic in its output schema — because the system prompt enforces the contract, not the parsing code.
 
-The prompt engineering here is non-trivial: the model is instructed with explicit prohibition language ("ESTRÍCTAMENTE PROHIBIDO inventar otros estados"), a golden rule for each status value, and a rigid output format. This is prompt engineering used as a **data contract**, not a chat interface.
+The prompt engineering here is non-trivial: the model is instructed with explicit prohibition language, a decision rule for each of the four categorical status values, and a rigid output template. This is prompt engineering applied as a **typed data contract** — the LLM is not a conversational interface here, it is a structured extraction engine with a formally defined output schema.
+
+### Idempotency & Data Consistency
+
+A naive automation writes a new record every time a matching email arrives. This pipeline does not. The Notion `Search Objects` pre-flight query — keyed on the composite of `Company AND Job Position` — acts as the system's consistency gate. Every execution is effectively idempotent: running the scenario twice on the same email produces exactly one record, not two.
+
+This matters for production reliability. Email triggers can misfire, scenarios can be re-run manually during debugging, and Gmail occasionally re-delivers messages. Without an idempotency mechanism, each of these events would corrupt the dataset. The pre-write lookup eliminates that failure class entirely.
+
+### State-Driven Filtering Logic
+
+The gatekeeper filter elevates this pipeline from a simple logger to a **state machine**. Rather than blindly appending records, the filter evaluates the delta between what Gemini extracted and what Notion currently holds. A status that has not changed is not an event worth recording — it is noise. A status that has advanced (e.g., a company moving a candidate from `Applied` to `Interview`) is a meaningful state transition and is logged as a new historical entry, preserving a full audit trail of each application's progression.
+
+This design separates signal from noise at the architectural level, not at the query level — keeping the database clean without requiring periodic deduplication jobs.
 
 ### Cost Efficiency by Design
 
