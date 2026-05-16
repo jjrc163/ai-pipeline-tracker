@@ -16,8 +16,8 @@
             "mapper": {},
             "metadata": {
                 "designer": {
-                    "x": 92,
-                    "y": -218
+                    "x": 372,
+                    "y": -247
                 },
                 "restore": {
                     "parameters": {
@@ -344,7 +344,6 @@
             "parameters": {
                 "__IMTCONN__": 8803346
             },
-            "filter": null,
             "mapper": {
                 "model": "gemini-3.1-flash-lite",
                 "contents": [
@@ -375,8 +374,8 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 398,
-                    "y": 118
+                    "x": 610,
+                    "y": 54
                 },
                 "restore": {
                     "expect": {
@@ -907,14 +906,14 @@
                     "version": 1,
                     "parameters": {},
                     "mapper": {
-                        "retry": true,
                         "count": "3",
+                        "retry": true,
                         "interval": "5"
                     },
                     "metadata": {
                         "designer": {
-                            "x": 10,
-                            "y": 103
+                            "x": 249,
+                            "y": 78
                         },
                         "restore": {
                             "expect": {
@@ -934,21 +933,21 @@
                                 "name": "count",
                                 "type": "uinteger",
                                 "label": "Number of attempts",
+                                "required": true,
                                 "validate": {
-                                    "min": 1,
-                                    "max": 10000
-                                },
-                                "required": true
+                                    "max": 10000,
+                                    "min": 1
+                                }
                             },
                             {
                                 "name": "interval",
                                 "type": "uinteger",
                                 "label": "Interval between attempts",
+                                "required": true,
                                 "validate": {
-                                    "min": 1,
-                                    "max": 44640
-                                },
-                                "required": true
+                                    "max": 44640,
+                                    "min": 1
+                                }
                             }
                         ]
                     }
@@ -967,7 +966,7 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 554,
+                    "x": 854,
                     "y": -269
                 },
                 "restore": {
@@ -1032,40 +1031,34 @@
             },
             "filter": null,
             "mapper": {
-                "select": "data_source_item",
                 "limit": "1",
-                "data_source": "35b03769-92da-80c2-b69d-000b3d5e0ad2",
                 "filter": [
                     [
                         {
                             "a": "Empresa |&*^%$#@| rich_text",
-                            "o": "text:equals",
-                            "b": "{{4.empresa}}"
+                            "b": "{{4.empresa}}",
+                            "o": "text:equals"
                         },
                         {
                             "a": "Nombre |&*^%$#@| title",
-                            "o": "text:equals",
-                            "b": "{{4.cargo}}"
+                            "b": "{{4.cargo}}",
+                            "o": "text:equals"
                         }
                     ]
-                ]
+                ],
+                "select": "data_source_item",
+                "data_source": "35b03769-92da-80c2-b69d-000b3d5e0ad2"
             },
             "metadata": {
                 "designer": {
-                    "x": 733,
+                    "x": 1033,
                     "y": 93
                 },
                 "restore": {
-                    "parameters": {
-                        "__IMTCONN__": {
-                            "label": "Mi Notion de Postulaciones (José Joaquín Rojas Chacón's Notion)",
-                            "data": {
-                                "scoped": "true",
-                                "connection": "notion2"
-                            }
-                        }
-                    },
                     "expect": {
+                        "sorts": {
+                            "mode": "chose"
+                        },
                         "select": {
                             "label": "Data Source ItemsThis must be used if your database has multiple data sources."
                         },
@@ -1074,9 +1067,15 @@
                                 "label": "Postulaciones de Empleo",
                                 "value": "35b03769-92da-80c2-b69d-000b3d5e0ad2"
                             }
-                        },
-                        "sorts": {
-                            "mode": "chose"
+                        }
+                    },
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "data": {
+                                "scoped": "true",
+                                "connection": "notion2"
+                            },
+                            "label": "Mi Notion de Postulaciones (José Joaquín Rojas Chacón's Notion)"
                         }
                     }
                 },
@@ -1466,8 +1465,6 @@
                     },
                     {
                         "name": "sorts",
-                        "type": "array",
-                        "label": "Sorts",
                         "spec": [
                             {
                                 "name": "select",
@@ -1530,19 +1527,21 @@
                                 ],
                                 "required": true
                             }
-                        ]
+                        ],
+                        "type": "array",
+                        "label": "Sorts"
                     }
                 ],
                 "interface": [
                     {
                         "name": "__IMTLENGTH__",
-                        "label": "Total number of bundles",
-                        "type": "uinteger"
+                        "type": "uinteger",
+                        "label": "Total number of bundles"
                     },
                     {
                         "name": "__IMTINDEX__",
-                        "label": "Bundle order position",
-                        "type": "uinteger"
+                        "type": "uinteger",
+                        "label": "Bundle order position"
                     },
                     {
                         "name": "object",
@@ -2159,13 +2158,9 @@
                     },
                     {
                         "name": "properties_value",
-                        "label": "Properties Value",
-                        "type": "collection",
                         "spec": [
                             {
                                 "name": "Empresa",
-                                "label": "Empresa",
-                                "type": "array",
                                 "spec": [
                                     {
                                         "name": "type",
@@ -2174,7 +2169,6 @@
                                     },
                                     {
                                         "name": "text",
-                                        "type": "collection",
                                         "spec": [
                                             {
                                                 "name": "content",
@@ -2187,11 +2181,11 @@
                                                 "label": "Link"
                                             }
                                         ],
+                                        "type": "collection",
                                         "label": "Text"
                                     },
                                     {
                                         "name": "annotations",
-                                        "type": "collection",
                                         "spec": [
                                             {
                                                 "name": "bold",
@@ -2224,6 +2218,7 @@
                                                 "label": "Color"
                                             }
                                         ],
+                                        "type": "collection",
                                         "label": "Annotations"
                                     },
                                     {
@@ -2236,12 +2231,12 @@
                                         "type": "text",
                                         "label": "Href"
                                     }
-                                ]
+                                ],
+                                "type": "array",
+                                "label": "Empresa"
                             },
                             {
                                 "name": "Status",
-                                "label": "Status",
-                                "type": "collection",
                                 "spec": [
                                     {
                                         "name": "id",
@@ -2258,12 +2253,12 @@
                                         "type": "text",
                                         "label": "Color"
                                     }
-                                ]
+                                ],
+                                "type": "collection",
+                                "label": "Status"
                             },
                             {
                                 "name": "Fecha",
-                                "label": "Fecha",
-                                "type": "collection",
                                 "spec": [
                                     {
                                         "name": "start",
@@ -2280,12 +2275,12 @@
                                         "type": "text",
                                         "label": "Time Zone"
                                     }
-                                ]
+                                ],
+                                "type": "collection",
+                                "label": "Fecha"
                             },
                             {
                                 "name": "Nombre",
-                                "label": "Nombre",
-                                "type": "array",
                                 "spec": [
                                     {
                                         "name": "type",
@@ -2294,7 +2289,6 @@
                                     },
                                     {
                                         "name": "text",
-                                        "type": "collection",
                                         "spec": [
                                             {
                                                 "name": "content",
@@ -2307,11 +2301,11 @@
                                                 "label": "Link"
                                             }
                                         ],
+                                        "type": "collection",
                                         "label": "Text"
                                     },
                                     {
                                         "name": "annotations",
-                                        "type": "collection",
                                         "spec": [
                                             {
                                                 "name": "bold",
@@ -2344,6 +2338,7 @@
                                                 "label": "Color"
                                             }
                                         ],
+                                        "type": "collection",
                                         "label": "Annotations"
                                     },
                                     {
@@ -2356,9 +2351,13 @@
                                         "type": "text",
                                         "label": "Href"
                                     }
-                                ]
+                                ],
+                                "type": "array",
+                                "label": "Nombre"
                             }
-                        ]
+                        ],
+                        "type": "collection",
+                        "label": "Properties Value"
                     }
                 ]
             }
@@ -2389,7 +2388,7 @@
                         {
                             "a": "{{4.status}}",
                             "o": "text:notequal",
-                            "b": "{{9.properties_value.Status}}"
+                            "b": "{{9.properties_value.Status.name}}"
                         }
                     ]
                 ]
@@ -2409,7 +2408,7 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 972,
+                    "x": 1272,
                     "y": -256
                 },
                 "restore": {
@@ -3473,7 +3472,7 @@
             },
             "metadata": {
                 "designer": {
-                    "x": 1252,
+                    "x": 1552,
                     "y": 59
                 },
                 "restore": {
