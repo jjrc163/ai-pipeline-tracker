@@ -71,9 +71,9 @@ The result is a fully automated, zero-maintenance hiring pipeline with built-in 
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="screenshots/ss1.png" alt="Make.com scenario canvas showing the full 5-module pipeline" width="100%"/>
+      <img src="screenshots/ss1.png" alt="Make.com scenario canvas showing the full 7-module pipeline" width="100%"/>
       <br/>
-      <sub><b>① Make.com Scenario Canvas</b><br/>Complete pipeline view — Gmail → Gemini → JSON → Notion → Telegram</sub>
+      <sub><b>① Make.com Scenario Canvas</b><br/>Full 7-module pipeline — Gmail → Gemini → JSON → Notion Search → Gatekeeper → Notion Write → Telegram</sub>
     </td>
     <td align="center" width="50%">
       <img src="screenshots/ss2.png" alt="Gemini module configuration showing the extraction prompt" width="100%"/>
@@ -104,12 +104,13 @@ The result is a fully automated, zero-maintenance hiring pipeline with built-in 
 | Gmail: Watch New Emails | 1 | Fixed cost per run |
 | Gemini: Create Completion | 6 | AI inference — highest single cost |
 | JSON: Parse | 4 | Per field deserialization |
+| Notion: Search Objects | 8 | Idempotency lookup — composite key query |
 | Notion: Create Page | 2 | One record write |
 | Telegram: Send Message | 5 | Conditional — only on Interview emails |
-| **Standard email (Applied / Rejected)** | **13** | Telegram step skipped |
-| **Interview email** | **18** | All 5 modules fire |
+| **Standard email (Applied / Technical Test / Rejected)** | **21** | Telegram step skipped |
+| **Interview email** | **26** | All 7 modules fire |
 
-> Make.com's free plan includes **1,000 ops/month**. At 13–18 credits per matched email, the pipeline comfortably handles dozens of applications per month with headroom for manual test runs. Since the Telegram module is gated behind the `"Solo Entrevistas"` filter, most executions stay at the lower 13-credit cost.
+> Make.com's free plan includes **1,000 ops/month**. At 21–26 credits per matched email, the pipeline comfortably handles dozens of applications per month with headroom for manual test runs. The Search Objects lookup is the fixed overhead that guarantees data consistency on every execution — a deliberate trade-off between credit cost and database integrity. Since the Telegram module is gated behind the `"Solo Entrevistas"` filter, most executions stay at the lower 21-credit cost.
 
 ---
 
@@ -145,7 +146,8 @@ The `Status` field uses Notion's native kanban grouping: Applied → *To-do*, In
    - **Gmail module**: Authorize with your Google account.
    - **Gemini module**: Connect your Google AI Studio API key.
    - **JSON Parse module**: Verify `Estructura_Vacantes_IA` data structure is recognized. If not, recreate it manually with three text fields: `cargo`, `empresa`, `status`.
-   - **Notion module**: Select your Notion integration and target database.
+   - **Notion Search module**: Select your Notion integration and target database — this module performs the pre-write idempotency lookup.
+   - **Notion Create module**: Select the same Notion integration and target database — this module writes the final record.
    - **Telegram module**: Connect your bot token and confirm your Chat ID.
 5. Run once manually using **Run once** to validate the full pipeline end-to-end.
 6. Activate the scenario.
@@ -181,7 +183,7 @@ Every architectural decision was made with operation consumption in mind:
 - **Gemini Flash Lite** is used instead of a heavier model — sufficient for structured extraction tasks, with a fraction of the latency and API cost.
 - **The Telegram alert is conditional** — it only fires for `Interview` statuses, avoiding a wasted operation on every `Applied` or `Rejected` email.
 - **Gmail's native query syntax** filters noise at the source (keywords in both subject and body), so Gemini never processes irrelevant emails.
-- **18 ops for a full multi-email run** stays well within the free tier even with daily execution.
+- **21–26 ops per matched email** stays well within the free tier for typical daily execution volumes. The 8-credit overhead of the Search Objects lookup is the explicit cost of idempotency — paid once per email to guarantee database integrity.
 
 ### Production-Grade Error Handling
 
@@ -195,7 +197,7 @@ The scenario metadata reflects deliberate resilience configuration:
 
 This pipeline demonstrates systems thinking applied to automation:
 
-- **Separation of concerns**: Gmail handles search, Gemini handles understanding, JSON handles typing, Notion handles persistence, Telegram handles alerting. Each module has exactly one responsibility.
+- **Separation of concerns**: Gmail handles search, Gemini handles understanding, JSON handles typing, Notion Search handles consistency verification, the Gatekeeper filter handles state evaluation, Notion Write handles persistence, and Telegram handles alerting. Each module has exactly one responsibility.
 - **Schema-first design**: The `Estructura_Vacantes_IA` data structure acts as a formal interface between the AI layer and the storage layer.
 - **Conditional routing**: Not every email produces every action — the filter is a lightweight substitute for a full router, keeping the scenario linear and readable.
 
